@@ -14,6 +14,10 @@ model_gru = load_model("gru_model.h5")
 # IMDb Vocabulary
 word_index = imdb.get_word_index()
 
+MAX_FEATURES = 10000
+
+word_index = imdb.get_word_index()
+
 def encode_review(text):
 
     words = text.lower().split()
@@ -21,7 +25,13 @@ def encode_review(text):
     encoded = [1]
 
     for word in words:
-        encoded.append(word_index.get(word, 2) + 3)
+
+        idx = word_index.get(word)
+
+        if idx is not None and idx < MAX_FEATURES:
+            encoded.append(idx + 3)
+        else:
+            encoded.append(2)
 
     return encoded
 
@@ -29,15 +39,20 @@ def preprocess(text):
 
     seq = encode_review(text)
 
+    seq = [min(x, 9999) for x in seq]
+
     return pad_sequences(
         [seq],
-        maxlen=MAXLEN
+        maxlen=MAXLEN,
+        padding='pre',
+        truncating='pre'
     )
 
 def predict(model, review):
 
     processed = preprocess(review)
 
+    st.write("Max token:", processed.max())
     score = model.predict(
         processed,
         verbose=0
